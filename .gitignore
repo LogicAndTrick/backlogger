@@ -1,3 +1,7 @@
+
+api/secret.php
+data/user*.json
+
 .DS_Store
 node_modules
 /dist

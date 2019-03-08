@@ -1,0 +1,127 @@
+[
+    {
+        "id": 23,
+        "abbreviation": "DC",
+        "name": "Dreamcast"
+    },
+    {
+        "id": 33,
+        "abbreviation": "GB",
+        "name": "Game Boy"
+    },
+    {
+        "id": 24,
+        "abbreviation": "GBA",
+        "name": "Game Boy Advance"
+    },
+    {
+        "id": 22,
+        "abbreviation": "GBC",
+        "name": "Game Boy Color"
+    },
+    {
+        "id": 37,
+        "abbreviation": "3DS",
+        "name": "Nintendo 3DS"
+    },
+    {
+        "id": 4,
+        "abbreviation": "N64",
+        "name": "Nintendo 64"
+    },
+    {
+        "id": 20,
+        "abbreviation": "NDS",
+        "name": "Nintendo DS"
+    },
+    {
+        "id": 18,
+        "abbreviation": "NES",
+        "name": "Nintendo Entertainment System"
+    },
+    {
+        "id": 21,
+        "abbreviation": "GC",
+        "name": "Nintendo GameCube"
+    },
+    {
+        "id": 130,
+        "abbreviation": "Switch",
+        "name": "Nintendo Switch"
+    },
+    {
+        "id": 6,
+        "abbreviation": "PC",
+        "name": "PC"
+    },
+    {
+        "id": 7,
+        "abbreviation": "PS1",
+        "name": "PlayStation"
+    },
+    {
+        "id": 8,
+        "abbreviation": "PS2",
+        "name": "PlayStation 2"
+    },
+    {
+        "id": 9,
+        "abbreviation": "PS3",
+        "name": "PlayStation 3"
+    },
+    {
+        "id": 48,
+        "abbreviation": "PS4",
+        "name": "PlayStation 4"
+    },
+    {
+        "id": 38,
+        "abbreviation": "PSP",
+        "name": "PlayStation Portable"
+    },
+    {
+        "id": 46,
+        "abbreviation": "Vita",
+        "name": "PlayStation Vita"
+    },
+    {
+        "id": 64,
+        "abbreviation": "SMS",
+        "name": "Sega Master System"
+    },
+    {
+        "id": 29,
+        "abbreviation": "Genesis",
+        "name": "Sega Mega Drive/Genesis"
+    },
+    {
+        "id": 19,
+        "abbreviation": "SNES",
+        "name": "Super Nintendo Entertainment System"
+    },
+    {
+        "id": 5,
+        "abbreviation": "Wii",
+        "name": "Wii"
+    },
+    {
+        "id": 41,
+        "abbreviation": "WiiU",
+        "name": "Wii U"
+    },
+    {
+        "id": 11,
+        "abbreviation": "XBOX",
+        "name": "Xbox"
+    },
+    {
+        "id": 12,
+        "abbreviation": "X360",
+        "name": "Xbox 360"
+    },
+    {
+        "id": 49,
+        "abbreviation": "XONE",
+        "name": "Xbox One"
+    }
+]

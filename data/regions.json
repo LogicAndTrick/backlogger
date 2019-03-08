@@ -1,0 +1,10 @@
+[
+    { "name": "Europe", "id": 1 },
+    { "name": "US", "id": 2 },
+    { "name": "Australia", "id": 3 },
+    { "name": "NZ", "id": 4 },
+    { "name": "Japan", "id": 5 },
+    { "name": "China", "id": 6 },
+    { "name": "Asia", "id": 7 },
+    { "name": "Worldwide", "id": 8 }
+]
