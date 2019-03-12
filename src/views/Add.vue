@@ -9,7 +9,8 @@
         <div class="control">
           <div class="select">
             <select v-model="platform" class="is-size-4">
-              <option v-for="p in $store.state.platforms" :value="p.id" :key="p.id">
+              <option :value="null">(All)</option>
+              <option v-for="p in platforms" :value="p.id" :key="p.id">
                 {{p.name}}
               </option>
             </select>
@@ -40,10 +41,12 @@
                 <div class="column">
                   <h1 class="title">
                     <a :href="r.url" target="_blank">{{r.name}}</a>
-                    <small class="subtitle">
-                      {{formatReleaseDate(r.first_release_date)}}
-                    </small>
                   </h1>
+                  <small class="subtitle">
+                    {{formatReleaseDate(r.first_release_date)}}
+                    &mdash;
+                    {{formatReleasePlatforms(r.release_dates)}}
+                  </small>
                 </div>
                 <div class="column is-one-fifth">
                   <button class="button is-success is-pulled-right" @click="add(r)">
@@ -67,18 +70,48 @@
 
 <script>
 import methods from "../methods";
+import _ from 'lodash';
 
 export default {
   name: 'add',
   data() {
     return {
       query: '',
-      platform: 7, // PS1, maybe this should default to last used?
+      platform: null,
       searching: false,
       results: []
     }
   },
+  mounted() {
+    this.updateUser();
+  },
+  computed: {
+    ignoredPlatforms() {
+      return this.$store.state.user.ignored_platforms || [];
+    },
+    platforms() {
+      return _.chain(this.$store.state.platforms)
+        .filter(x => {
+          return this.ignoredPlatforms.indexOf(x.id) < 0;
+        })
+        .value();
+    },
+    indexedPlatforms() {
+      return _.indexBy(this.platforms, 'id');
+    }
+  },
   methods: {
+    updateUser() {
+      let login = this.$store.state.user;
+      let view = this.$route.params.user;
+      if (!login || view !== login.name) {
+        this.$router.push('/');
+        return;
+      }
+      this.$nextTick(() => {
+        this.$el.getElementsByTagName('input')[0].focus();
+      });
+    },
     async search() {
       if (this.query.length < 3) return;
       this.searching = true;
@@ -92,8 +125,20 @@ export default {
       this.searching = false;
       this.results = result;
     },
+    formatReleasePlatforms(releaseDates) {
+      let platforms = _.chain(releaseDates)
+        .map('platform')
+        .uniq()
+        .map(p => {
+          return _.find(this.platforms, { id: p });
+        })
+        .map('name')
+        .compact()
+        .value();
+      return platforms.join(', ') || 'Other platform';
+    },
     formatReleaseDate(date) {
-      return date ? new Date(date * 1000).getFullYear() : '';
+      return date ? new Date(date * 1000).getFullYear() : 'Unknown';
     },
     async add(game) {
       
@@ -106,11 +151,19 @@ export default {
       this.$store.commit('add', result);
       this.$router.push({ name: 'game', params: { slug: result.slug } });
     }
+  },
+  watch: {
+    $route() {
+      this.updateUser();
+    }
   }
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
+.title {
+  margin-bottom: 0.25rem !important;
+}
 .summary {
   white-space: pre-wrap;
 }

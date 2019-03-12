@@ -7,26 +7,16 @@
           backlogger
         </router-link>
 
-        <a role="button" :class="'navbar-burger burger ' + (navExpanded ? 'is-active' : '')" @click="navExpanded = !navExpanded">
-          <span aria-hidden="true"></span>
-          <span aria-hidden="true"></span>
-          <span aria-hidden="true"></span>
-        </a>
-      </div>
-
-      <div id="navbar-expander" :class="'navbar-menu ' + (navExpanded ? 'is-active' : '')">
-        <div class="navbar-start">
-
-          <template v-if="loggedIn">
-            <router-link to="/" class="navbar-item">Home</router-link>
-            <router-link to="/add" class="navbar-item">Add games</router-link>
-            <a class="navbar-item" @click.prevent="logout">Log out</a>
-          </template>
-          <template v-else>
-            <router-link to="/" class="navbar-item">Login</router-link>
-          </template>
-
-        </div>
+        <template v-if="loggedIn">
+          <router-link :to="'/' + user.name + '/'" class="navbar-item">Home</router-link>
+          <router-link :to="'/' + user.name + '/add'" class="navbar-item">Add games</router-link>
+          <router-link :to="'/' + user.name + '/settings'" class="navbar-item">Settings</router-link>
+          <router-link to="/users" class="navbar-item">Other users</router-link>
+          <a class="navbar-item" @click.prevent="logout">Log out</a>
+        </template>
+        <template v-else>
+          <router-link to="/login" class="navbar-item">Login</router-link>
+        </template>
       </div>
     </nav>
     
@@ -34,23 +24,18 @@
       <i class="fas fa-spinner fa-pulse fa-3x"></i>
     </div>
     <div key="b" v-else class="section">
-      <router-view v-if="loggedIn" />
-      <login-form v-else @login="login" />
+      <router-view />
     </div>
 
   </div>
 </template>
 
 <script>
-import LoginForm from '@/components/LoginForm.vue';
 import cookie from 'js-cookie';
 import methods from "./methods";
 
 export default {
   name: 'app',
-  components: {
-    LoginForm
-  },
   data: function() {
     return {
       loading: true,
@@ -80,13 +65,10 @@ export default {
     }
   },
   methods: {
-    login(user) {
-      this.user = user;
-      cookie.set('password', user.password, { expires: 365 });
-    },
     logout() {
       this.user = null;
       cookie.set('password', '', { expires: 365 });
+      this.$router.push({ name: 'login' });
     }
   }
 }

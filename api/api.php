@@ -6,14 +6,21 @@ require_once 'database.php';
 class Api 
 {
     private $database;
+    private $data;
 
-    function __construct()
-    {
+    function __construct() {
         $this->database = new Database();
+        $this->data = json_decode(file_get_contents("php://input"), TRUE);
     }
 
-    private function request(string $endpoint, array $fields, string $search = '', $filters = '', int $limit = 10)
-    {
+    private function get($key, $default = null) {
+        $val = null;
+        if (array_key_exists($key, $this->data)) $val = $this->data[$key];
+        if (!$val || $val == '') $val = $default;
+        return $val;
+    }
+
+    private function request(string $endpoint, array $fields, string $search = '', $filters = '', int $limit = 10) {
         $api_key = $GLOBALS['api_key'];
 
         $url = "https://api-v3.igdb.com/{$endpoint}";
@@ -35,27 +42,38 @@ class Api
         $context  = stream_context_create($options);
         $result = file_get_contents($url, false, $context);
         
-        return json_decode($result);
+        return json_decode($result, true);
     }
 
-    public function search()
-    {
-        $query = isset($_POST['query']) ? $_POST['query'] : '';
-        $platform = isset($_POST['platform']) ? $_POST['platform'] : '';
+    public function search() {
+        $query = $this->get('query', '');
+        $platform = $this->get('platform', '');
         $filter = '';
-        if (isset($_POST['platform']) && $_POST['platform'] > 0) $filter .= "release_dates.platform = ({$_POST['platform']})";
-        return $this->request(
+        $platform = $this->get('platform', 0);
+        if ($platform > 0) $filter .= "release_dates.platform = ($platform)";
+        $results = $this->request(
             'games',
-            ['first_release_date', 'name', 'slug', 'summary', 'url', 'cover.image_id', 'genres.name', 'themes.name' ],
+            ['first_release_date', 'name', 'slug', 'summary', 'url', 'cover.image_id', 'genres.name', 'themes.name', 'popularity', 'release_dates.platform' ],
             $query,
-            $filter
+            $filter,
+            50
         );
+
+        // IGDB sort seems to be broken? Manually sort the results...
+        usort($results, function ($l, $r) {
+            $a = $l['popularity'] ?? 1;
+            $b = $r['popularity'] ?? 1;
+            if ($a == $b) return 0;
+            return ($a < $b) ? -1 : 1;
+        });
+        $results = array_reverse($results, false);
+
+        return $results;
     }
 
-    public function add()
-    {
-        $user_id = $_POST['user_id'];
-        $game_id = $_POST['game_id'];
+    public function add() {
+        $user_id = $this->get('user_id');
+        $game_id = $this->get('game_id');
         $filter = "id = $game_id";
         $game = $this->request(
             'games',
@@ -68,13 +86,40 @@ class Api
         return $game[0];
     }
 
-    public function login()
-    {
-        return $this->database->user_login($_POST['password']);
+    public function update() {
+        $user_id = $this->get('user_id');
+        $game_id = $this->get('game_id');
+        $data = $this->get('data');
+        return $this->database->game_update($user_id, $game_id, $data);
     }
 
-    public function __call(string $name, array $arguments)
-    {
+    public function remove() {
+        $user_id = $this->get('user_id');
+        $game_id = $this->get('game_id');
+        $this->database->game_remove($user_id, $game_id);
+    }
+
+    public function login() {
+        $pw = $this->get('password');
+        return $this->database->user_login($pw);
+    }
+
+    public function user() {
+        $name = $this->get('name');
+        return $this->database->user_get_by_name($name);
+    }
+
+    public function settings() {
+        $user_id = $this->get('user_id');
+        $data = $this->get('data');
+        return $this->database->user_update($user_id, $data);
+    }
+
+    public function users() {
+        return $this->database->user_get_all();
+    }
+
+    public function __call(string $name, array $arguments) {
         http_response_code(404);
         echo "<html><body><h1>404 not found</h1><p>Unknown endpoint: {$name}</p></body></html>";
         exit;
