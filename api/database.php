@@ -75,6 +75,15 @@ class Database
         return $user;
     }
 
+    public function game_get($user_id, $game_id) {
+        $user = $this->user_get($user_id);
+        $game = array_values(array_filter($user['games'], function ($g) use ($game_id) {
+            return $g['id'] == $game_id;
+        }));
+        if (count($game) != 1) return null;
+        return $game[0];
+    }
+
     public function game_update($user_id, $game_id, $data) {
         $user = $this->user_get($user_id);
         $game = array_filter($user['games'], function ($g) use ($game_id) {

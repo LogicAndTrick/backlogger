@@ -21,7 +21,7 @@
     </nav>
     
     <div key="a" v-if="loading" class="has-text-centered margin-vertical-4">
-      <i class="fas fa-spinner fa-pulse fa-3x"></i>
+      <font-awesome-icon icon="spinner" size="3x" pulse></font-awesome-icon>
     </div>
     <div key="b" v-else class="section">
       <router-view />

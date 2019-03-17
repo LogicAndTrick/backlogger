@@ -2,13 +2,108 @@
   <div class="game">
 
     <div v-if="loading" class="has-text-centered margin-vertical-4" key="L">
-      <i class="fas fa-spinner fa-pulse fa-3x"></i>
+
+      <font-awesome-icon icon="spinner" size="3x" pulse></font-awesome-icon>
+
     </div>
+    <form v-else-if="editing" class="box margin-vertical-1" enctype="multipart/form-data" method="post" key="E" @submit.prevent="saveEdit">
+      
+      <div v-if="saving" class="has-text-centered margin-vertical-4" key="S">
+        <font-awesome-icon icon="spinner" size="3x" pulse></font-awesome-icon>
+      </div>
+      <div v-else key="ED">
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label">Name</label>
+          </div>
+          <div class="field-body">
+            <div class="field">
+              <p class="control">
+                <input class="input" type="text" name="name" placeholder="Name" :value="game.name">
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label">Summary</label>
+          </div>
+          <div class="field-body">
+            <div class="field">
+              <div class="control">
+                <textarea class="textarea" name="summary">{{game.summary}}</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label">Cover (upload)</label>
+          </div>
+          <div class="field-body">
+            <div class="field">
+              <div class="control">
+                <div class="file has-name is-fullwidth">
+                  <label class="file-label">
+                    <input class="file-input" type="file" name="cover" ref="filename" @change="updateFilename" @input="checkIfYouAreAnIdiot">
+                    <span class="file-cta">
+                      <span class="file-icon">
+                        <font-awesome-icon icon="upload"></font-awesome-icon>
+                      </span>
+                      <span class="file-label">
+                        Choose a file…
+                      </span>
+                    </span>
+                    <span class="file-name">
+                      Leave blank to leave unchanged
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label">Cover (url)</label>
+          </div>
+          <div class="field-body">
+            <div class="field">
+              <div class="control">
+                <input class="input" type="text" name="cover_url" ref="fileurl" placeholder="Leave blank to leave unchanged" @input="checkIfYouAreAnIdiot">
+              </div>
+              <p class="help" v-if="youAreAnIdiot">Don't try and set both an upload and a url cover, idiot</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label">
+            <!-- Left empty for spacing -->
+          </div>
+          <div class="field-body">
+            <div class="field is-grouped">
+              <div class="control">
+                <button class="button is-primary" type="submit">Save</button>
+              </div>
+              <div class="control">
+                <button class="button is-text" type="button" @click="editing = false">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </form>
     <div v-else class="box margin-vertical-1" key="D">
+
       <div class="columns">
-        <div class="column is-one-quarter" v-if="game.cover">
+        <div class="column is-one-quarter" v-if="coverImage">
           <figure class="image">
-            <img :src="'https://images.igdb.com/igdb/image/upload/t_cover_big/' + game.cover.image_id + '.jpg'" />
+            <img :src="coverImage" />
           </figure>
           <h3 class="title is-4 margin-top-1">Release dates</h3>
           <div class="content">
@@ -29,7 +124,7 @@
           </h1>
           
           <p class="title is-4" v-if="saving">
-            <span class="fas fa-spinner fa-pulse"></span> Please wait...
+            <font-awesome-icon icon="spinner" pulse></font-awesome-icon> Please wait...
           </p>
           <div v-else-if="canEdit" class="field is-grouped">
             <div class="control select">
@@ -46,6 +141,10 @@
                 Don't show in public profile
               </label>
             </div>
+            <div class="control is-expanded"></div>
+            <div>
+              <button type="button" class="button is-success is-small" @click="editing = true">Edit</button>
+            </div>
           </div>
 
           <p class="summary">{{game.summary}}</p>
@@ -55,6 +154,7 @@
           </div>
         </div>
       </div>
+
     </div>
     
   </div>
@@ -72,7 +172,9 @@ export default {
       hidden: false,
       saving: false,
       loading: true,
-      otherUser: null
+      otherUser: null,
+      editing: false,
+      youAreAnIdiot: false
     }
   },
   mounted() {
@@ -90,6 +192,16 @@ export default {
     game() {
       return _.find(this.user.games, g => g.slug == this.$route.params.slug);
     },
+    coverImage() {
+      let cover = this.game.custom_cover;
+      if (!cover) {
+        let img = this.game.cover && this.game.cover.image_id || 'nocover_qhhlj6';
+        cover = `https://images.igdb.com/igdb/image/upload/t_cover_big/${img}.jpg`;
+      } else {
+        cover = this.$store.state.baseUrl + 'images/' + cover;
+      }
+      return cover;
+    },
     releases() {
       let platforms = _.keyBy(this.$store.state.platforms, 'id');
       let regions = _.keyBy(this.$store.state.regions, 'id');
@@ -97,7 +209,7 @@ export default {
         .map(rd => {
           return {
             date: rd.date,
-            year: new Date(rd.date * 1000).getFullYear(),
+            year: new Date(rd.date * 1000).getFullYear() || 'Unknown',
             platform: platforms[rd.platform],
             region: regions[rd.region]
           };
@@ -159,6 +271,28 @@ export default {
       });
       this.$store.commit('update', result);
       this.saving = false;
+    },
+    updateFilename() {
+      if (!this.$refs.filename) return;
+      let fname = this.$refs.filename.files.length > 0
+        ? this.$refs.filename.files[0].name
+        : 'Leave blank to leave unchanged';
+      this.$el.getElementsByClassName('file-name')[0].innerHTML = fname;
+    },
+    async saveEdit() {
+      this.saving = true;
+      let fd = new FormData(this.$el.getElementsByTagName('form')[0]);
+      fd.append('user_id', this.$store.state.user.id);
+      fd.append('game_id', this.game.id);
+      let result = await methods.upload(this.$store.state.baseUrl, 'edit', fd);
+      this.$store.commit('update', result);
+      this.saving = false;
+      this.editing = false;
+    },
+    checkIfYouAreAnIdiot() {
+      let fn = this.$refs.filename;
+      let fu = this.$refs.fileurl;
+      this.youAreAnIdiot = fn && fu && fn.files.length > 0 && fu.value.length > 0;
     }
   },
   watch: {
@@ -175,6 +309,17 @@ export default {
   }
   .checkbox {
     padding-top: 0.6em;
+  }
+  .file-cta {
+    border-color: #dfd4b1;
+  }
+  .file-name {
+    background-color: #FDF6E3;
+    border-color: #dfd4b1;
+    color: #839496;
+  }
+  .file-label:hover .file-name {
+    border-color: #dfd4b1;
   }
 </style>
 

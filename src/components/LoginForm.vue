@@ -7,7 +7,7 @@
           </div>
           <div class="control">
             <button class="button is-info" :disabled="loading">
-              <span class="fas fa-user"></span>
+              <font-awesome-icon icon="user"></font-awesome-icon>
               &nbsp; Login
             </button>
           </div>
@@ -31,9 +31,14 @@ export default {
   methods: {
     async login() {
       this.loading = true;
-      let result = await methods.request(this.$store.state.baseUrl, 'login', {
-        password: this.password
-      });
+      let result = null;
+      try {
+        result = await methods.request(this.$store.state.baseUrl, 'login', {
+          password: this.password
+        });
+      } catch {
+        // ... 
+      }
       this.loading = false;
       if (result) {
         result.password = this.password;

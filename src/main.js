@@ -5,6 +5,13 @@ import Buefy from 'buefy'
 import './assets/scss/app.scss'
 import store from './store'
 
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faSpinner, faUser, faSearch, faPlus, faUpload, faChevronDown, faChevronUp, faQuestion, faPlay, faCheck, faPause, faBan } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+
+library.add(faSpinner, faUser, faSearch, faPlus, faUpload, faChevronDown, faChevronUp, faQuestion, faPlay, faCheck, faPause, faBan);
+Vue.component('font-awesome-icon', FontAwesomeIcon);
+
 Vue.use(Buefy)
 
 Vue.config.productionTip = false

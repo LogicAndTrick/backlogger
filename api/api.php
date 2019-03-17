@@ -10,12 +10,25 @@ class Api
 
     function __construct() {
         $this->database = new Database();
-        $this->data = json_decode(file_get_contents("php://input"), TRUE);
+        $this->data = json_decode(file_get_contents("php://input"), TRUE) ?? [];
+    }
+
+    public function authorise() {
+        $pw = $this->get('password') ?? $_SERVER['HTTP_X_PASSWORD'] ?? '';
+        $auth = array_key_exists($pw, $GLOBALS['passwords']);
+
+        if (!$auth) {
+            header('Content-Type: application/json');
+            http_response_code(403);
+            echo '{ message: "You are not authorised." }';
+            exit;
+        }
     }
 
     private function get($key, $default = null) {
         $val = null;
         if (array_key_exists($key, $this->data)) $val = $this->data[$key];
+        if ((!$val || $val == '') && array_key_exists($key, $_POST)) $val = $_POST[$key];
         if (!$val || $val == '') $val = $default;
         return $val;
     }
@@ -82,21 +95,78 @@ class Api
             $filter
         );
         if (count($game) === 0) return null;
-        $this->database->game_add($user_id, $game[0]);
-        return $game[0];
+        $game = $game[0];
+
+        // Download the cover to the local filesystem if possible
+        if (array_key_exists('cover', $game) && array_key_exists('image_id', $game['cover'])) {
+            $image_id = $game['cover']['image_id'];
+            $cover = "https://images.igdb.com/igdb/image/upload/t_cover_big/$image_id.jpg";
+            $fname = "user-$user_id-game-$game_id." . pathinfo($cover, PATHINFO_EXTENSION);
+            file_put_contents(__DIR__ . '/../images/' . $fname, fopen($cover, 'r'));
+            $game['custom_cover'] = $fname;
+        }
+        $this->database->game_add($user_id, $game);
+        return $game;
     }
 
     public function update() {
         $user_id = $this->get('user_id');
         $game_id = $this->get('game_id');
-        $data = $this->get('data');
+        $upd = $this->get('data');
+        $data = [
+            'hidden' => $upd['hidden'],
+            'status' => $upd['status']
+        ];
+        return $this->database->game_update($user_id, $game_id, $data);
+    }
+
+    public function edit() {
+        $data = [];
+        $user_id = $this->get('user_id');
+        $game_id = $this->get('game_id');
+
+        $name = $this->get('name');
+        $summary = $this->get('summary');
+        if ($name) $data['name'] = $name;
+        if ($summary) $data['summary'] = $summary;
+
+        $game = $this->database->game_get($user_id, $game_id);
+
+        $file_url = $this->get('cover_url');
+        $file = $_FILES['cover'];
+        $max_size_bytes = 1024 * 1024 * 1; // 1mb max
+
+        $del_cover = false;
+        $ts = time();
+        if ($file_url) {
+            $fname = "user-$user_id-game-$game_id-$ts." . pathinfo($file_url, PATHINFO_EXTENSION);
+            file_put_contents(__DIR__ . '/../images/' . $fname, fopen($file_url, 'r'));
+            $data['custom_cover'] = $fname;
+            $del_cover = true;
+        } else if ($file['error'] ===  UPLOAD_ERR_OK && $file['size'] <= $max_size_bytes) {
+            $fname = "user-$user_id-game-$game_id-$ts." . pathinfo($file['name'], PATHINFO_EXTENSION);
+            move_uploaded_file($file['tmp_name'], __DIR__ . '/../images/' . $fname);
+            $data['custom_cover'] = $fname;
+            $del_cover = true;
+        }
+        if ($del_cover && array_key_exists('custom_cover', $game)) {
+            $path = __DIR__ . '/../images/' . $game['custom_cover'];
+            if (file_exists($path)) unlink($path);
+        }
         return $this->database->game_update($user_id, $game_id, $data);
     }
 
     public function remove() {
         $user_id = $this->get('user_id');
         $game_id = $this->get('game_id');
+        $game = $this->database->game_get($user_id, $game_id);
+
         $this->database->game_remove($user_id, $game_id);
+
+        if (array_key_exists('custom_cover', $game)) {
+            $path = __DIR__ . '/../images/' . $game['custom_cover'];
+            if (file_exists($path)) unlink($path);
+        }
     }
 
     public function login() {
@@ -120,8 +190,8 @@ class Api
     }
 
     public function __call(string $name, array $arguments) {
-        http_response_code(404);
-        echo "<html><body><h1>404 not found</h1><p>Unknown endpoint: {$name}</p></body></html>";
+        header('Content-Type: application/json');
+        echo '{ message: "Unknown endpoint: ' . $name . '." }';
         exit;
     }
 }
@@ -135,7 +205,7 @@ $args = array_slice($tokens, 2);
 
 header('Access-Control-Allow-Origin:  *');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE');
-header('Access-Control-Allow-Headers: Content-Type, X-Auth-Token, Origin, Authorization');
+header('Access-Control-Allow-Headers: Content-Type, X-Password, Origin, Authorization');
 
 if ($method === 'options') {
 
@@ -144,6 +214,7 @@ if ($method === 'options') {
 }
 
 $api = new Api();
+$api->authorise();
 $result = call_user_func_array(array($api, $method_name), $args);
 $json = json_encode($result);
 header('Content-Type: application/json');

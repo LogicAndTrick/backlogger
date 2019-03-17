@@ -2,7 +2,7 @@
   <div class="users">
 
     <div v-if="loading" class="has-text-centered margin-vertical-4">
-      <i class="fas fa-spinner fa-pulse fa-3x"></i>
+      <font-awesome-icon icon="spinner" size="3x" pulse></font-awesome-icon>
     </div>
     <div v-else>
       <h1 class="title">Spy on other users</h1>
@@ -18,7 +18,6 @@
 
 <script>
 import methods from "../methods";
-import _ from 'lodash';
 
 export default {
   name: 'users',

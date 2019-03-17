@@ -2,7 +2,7 @@
   <div class="home">
     
     <div v-if="loading" class="has-text-centered margin-vertical-4" key="L">
-      <i class="fas fa-spinner fa-pulse fa-3x"></i>
+      <font-awesome-icon icon="spinner" size="3x" pulse></font-awesome-icon>
     </div>
     <div v-else class="columns is-mobile" key="D">
       <div class="column is-narrow filter-column">
@@ -19,15 +19,27 @@
           <b-checkbox v-model="platform" :native-value="p.id">{{p.abbreviation}}</b-checkbox>
         </div>
         
-        <h1 class="title is-6">Release Year</h1>
-        <div class="field" v-for="y in release_years" :key="y">
-          <b-checkbox v-model="year" :native-value="y">{{y}}</b-checkbox>
-        </div>
+        <b-collapse :open="false">
+          <h1 class="title is-6 margin-bottom-1" slot="trigger" slot-scope="props">
+            Release Year
+            <font-awesome-icon v-if="props.open" key="O" icon="chevron-up"></font-awesome-icon>
+            <font-awesome-icon v-else key="C" icon="chevron-down"></font-awesome-icon>
+          </h1>
+          <div class="field" v-for="y in release_years" :key="y">
+            <b-checkbox v-model="year" :native-value="y">{{y}}</b-checkbox>
+          </div>
+        </b-collapse>
         
-        <h1 class="title is-6">Status</h1>
-        <div class="field" v-for="s in statuses" :key="s">
-          <b-checkbox v-model="status" :native-value="s">{{s}}</b-checkbox>
-        </div>
+        <b-collapse :open="false">
+          <h1 class="title is-6 margin-bottom-1" slot="trigger" slot-scope="props">
+            Status
+            <font-awesome-icon v-if="props.open" key="O" icon="chevron-up"></font-awesome-icon>
+            <font-awesome-icon v-else key="C" icon="chevron-down"></font-awesome-icon>
+          </h1>
+          <div class="field" v-for="s in statuses" :key="s">
+            <b-checkbox v-model="status" :native-value="s">{{s}}</b-checkbox>
+          </div>
+        </b-collapse>
 
       </div>
       <div class="column">
@@ -39,7 +51,7 @@
             :style="getBackgroundImageStyle(g)"
           >
             <span :class="'status ' + (g.status || 'Backlog').toLowerCase()">
-              <span :class="iconForStatus(g.status)"></span>
+              <font-awesome-icon v-if="iconForStatus(g.status)" :icon="iconForStatus(g.status)"></font-awesome-icon>
             </span>
             <span class="info">
               <span class="title is-3">{{g.name}}</span>
@@ -102,13 +114,13 @@ export default {
         })
         .filter(g => {
           if (this.year.length == 0) return true;
-          return this.year.indexOf(new Date(g.first_release_date * 1000).getFullYear()) >= 0;
+          return this.year.indexOf(new Date(g.first_release_date * 1000).getFullYear() || 'Unknown') >= 0;
         })
         .filter(g => {
           if (this.status.length == 0) return true;
           return this.status.indexOf(g.status || 'Backlog') >= 0;
         })
-        .sortBy('name')
+        .sortBy(x => (x.name || '').toLowerCase())
         .value();
     },
     platforms() {
@@ -125,7 +137,7 @@ export default {
     release_years() {
       return _.chain(this.all_games)
         .map('first_release_date')
-        .map(x => new Date(x * 1000).getFullYear())
+        .map(x => new Date(x * 1000).getFullYear() || 'Unknown')
         .uniq()
         .sort()
         .value();
@@ -166,18 +178,19 @@ export default {
       status = status || 'Backlog';
       switch (status) {
         case 'Tentative':
-          return 'fas fa-question';
+          return 'question';
         case 'Backlog':
           return '';
         case 'Playing':
-          return 'fas fa-play';
+          return 'play';
         case 'Completed':
-          return 'fas fa-check';
+          return 'check';
         case 'Stalled':
-          return 'fas fa-pause';
+          return 'pause';
         case 'Dropped':
-          return 'fas fa-ban';
+          return 'ban';
       }
+      console.log(status);
       return '';
     },
     getBackgroundImageStyle(game) {
@@ -185,6 +198,8 @@ export default {
       if (!cover) {
         let img = game.cover && game.cover.image_id || 'nocover_qhhlj6';
         cover = `https://images.igdb.com/igdb/image/upload/t_cover_big/${img}.jpg`;
+      } else {
+        cover = this.$store.state.baseUrl + 'images/' + cover;
       }
       return {
         'background-image': `url('${cover}')`
@@ -204,6 +219,10 @@ $grid-padding: 5px;
 
 .filter-column {
   min-width: 200px;
+}
+
+.title > svg {
+  float: right;
 }
 
 .grid {

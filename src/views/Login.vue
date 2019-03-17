@@ -9,7 +9,6 @@
 <script>
 import LoginForm from '@/components/LoginForm.vue';
 import cookie from 'js-cookie';
-import _ from 'lodash';
 
 export default {
   name: 'login',

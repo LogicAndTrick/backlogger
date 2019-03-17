@@ -1,6 +1,7 @@
 
 api/secret.php
 data/user*.json
+images/*
 
 .DS_Store
 node_modules

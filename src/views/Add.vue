@@ -18,14 +18,14 @@
         </div>
         <div class="control">
           <button type="submit" class="button is-info is-size-4" :disabled="query.length < 3" @click.prevent="search">
-            <span class="fas fa-search"></span>
+            <font-awesome-icon icon="search"></font-awesome-icon>
           </button>
         </div>
       </div>
     </form>
 
     <div v-if="searching" class="has-text-centered margin-vertical-4">
-      <i class="fas fa-spinner fa-pulse fa-3x"></i>
+      <font-awesome-icon icon="spinner" size="3x" pulse></font-awesome-icon>
     </div>
     <div v-else-if="results.length">
       <div v-for="r in results" :key="r.id">
@@ -50,7 +50,7 @@
                 </div>
                 <div class="column is-one-fifth">
                   <button class="button is-success is-pulled-right" @click="add(r)">
-                    <span class="fas fa-plus"></span> &nbsp; Add
+                    <font-awesome-icon icon="plus"></font-awesome-icon> &nbsp; Add
                   </button>
                 </div>
               </div>

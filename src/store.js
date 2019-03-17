@@ -10,7 +10,7 @@ Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
-    baseUrl: 'http://localhost:85/',
+    baseUrl: process.env.NODE_ENV == 'production' ? '/' : 'http://localhost:85/',
     platforms: platforms,
     regions: regions,
     statuses: statuses,
