@@ -43,22 +43,80 @@
 
       </div>
       <div class="column">
+
+        <div class="field is-grouped">
+          <div class="control has-icons-left">
+            <div class="select">
+              <select v-model="sort">
+                <option selected>Name</option>
+                <option selected>Release year</option>
+                <option selected>Status</option>
+              </select>
+            </div>
+            <span class="icon is-left">
+              <font-awesome-icon icon="sort-alpha-down"></font-awesome-icon>
+            </span>
+          </div>
+          <div class="control">
+            <button type="button" :class="'button ' + (size == 'mega' ? '' : 'is-text')" @click="size = 'mega'">
+              <span class="icon is-small">
+                <font-awesome-icon icon="square"></font-awesome-icon>
+              </span> 
+            </button>
+          </div>
+          <div class="control">
+            <button type="button" :class="'button ' + (size == 'large' ? '' : 'is-text')" @click="size = 'large'">
+              <span class="icon is-small">
+                <font-awesome-icon icon="th-large"></font-awesome-icon>
+              </span> 
+            </button>
+          </div>
+          <div class="control">
+            <button type="button" :class="'button ' + (size == 'small' ? '' : 'is-text')" @click="size = 'small'">
+              <span class="icon is-small">
+                <font-awesome-icon icon="th"></font-awesome-icon>
+              </span> 
+            </button>
+          </div>
+          <div class="control">
+            <button type="button" :class="'button ' + (size == 'list' ? '' : 'is-text')" @click="size = 'list'">
+              <span class="icon is-small">
+                <font-awesome-icon icon="list"></font-awesome-icon>
+              </span> 
+            </button>
+          </div>
+        </div>
         
-        <div class="grid">
+        <div :class="'grid size-' + size">
 
           <router-link
-            :to="{ name: 'game', params: { user: user.name, slug: g.slug }}" class="grid-item" v-for="g in games" :key="g.id"
+            :to="{ name: 'game', params: { user: user.name, slug: g.slug }}" class="grid-item" v-for="g in games" :key="g.id + ' ' + size"
             :style="getBackgroundImageStyle(g)"
           >
-            <span :class="'status ' + (g.status || 'Backlog').toLowerCase()">
-              <font-awesome-icon v-if="iconForStatus(g.status)" :icon="iconForStatus(g.status)"></font-awesome-icon>
+            <span class="cover">
+              <img :src="getImageUrl(g)" alt="cover" />
+              <span :class="'status ' + (g.status || 'Backlog').toLowerCase()">
+                <font-awesome-icon v-if="iconForStatus(g.status)" :icon="iconForStatus(g.status)"></font-awesome-icon>
+              </span>
+              <span class="info">
+                <span class="title is-3">{{g.name}}</span>
+                <span class="title is-4">{{formatReleaseDate(g.first_release_date)}}</span>
+              </span>
+              <span v-if="g.hidden" class="hidden">
+                Private
+              </span>
             </span>
-            <span class="info">
-              <span class="title is-3">{{g.name}}</span>
-              <span class="title is-4">{{formatReleaseDate(g.first_release_date)}}</span>
-            </span>
-            <span v-if="g.hidden" class="hidden">
-              Private
+            <span class="details">
+              <h3 class="title is-3">
+                {{g.name}}
+                <small class="subtitle">
+                  {{g.status || 'Backlog'}} - {{formatReleaseDate(g.first_release_date)}}
+                </small>
+              </h3>
+              <div class="tags" v-if="g.genres || g.themes">
+                <span v-for="e in g.genres || []" :key="'e' + e.id" class="tag is-primary">{{e.name}}</span>
+                <span v-for="t in g.themes || []" :key="'t' + t.id" class="tag is-info margin-right-1">{{t.name}}</span>
+              </div>
             </span>
           </router-link>
 
@@ -83,7 +141,9 @@ export default {
       year: [],
       status: _.filter(this.$store.state.statuses, x => x != 'Dropped'),
       loading: true,
-      otherUser: null
+      otherUser: null,
+      sort: 'Status',
+      size: 'large'
     }
   },
   mounted() {
@@ -121,6 +181,17 @@ export default {
           return this.status.indexOf(g.status || 'Backlog') >= 0;
         })
         .sortBy(x => (x.name || '').toLowerCase())
+        .sortBy(x => {
+          switch (this.sort) {
+            case 'Release year':
+              return new Date(x.first_release_date * 1000).getFullYear() || '9999';
+            case 'Status':
+              let sts = (x.status || 'Backlog');
+              return this.statuses.indexOf(sts);
+            default:
+              return (x.name || '').toLowerCase();
+          }
+        })
         .value();
     },
     platforms() {
@@ -189,11 +260,12 @@ export default {
           return 'pause';
         case 'Dropped':
           return 'ban';
+        case 'Up next':
+          return 'play-circle';
       }
-      console.log(status);
       return '';
     },
-    getBackgroundImageStyle(game) {
+    getImageUrl(game) {
       let cover = game.custom_cover;
       if (!cover) {
         let img = game.cover && game.cover.image_id || 'nocover_qhhlj6';
@@ -201,6 +273,10 @@ export default {
       } else {
         cover = this.$store.state.baseUrl + 'images/' + cover;
       }
+      return cover;
+    },
+    getBackgroundImageStyle(game) {
+      let cover = this.getImageUrl(game);
       return {
         'background-image': `url('${cover}')`
       };
@@ -209,6 +285,12 @@ export default {
   watch: {
     $route() {
       this.updateUser();
+    },
+    size() {
+      return;
+      let grids = this.$el.getElementsByClassName('grid-item');
+      _.each(grids, g => g.classList.remove('grid-item'));
+      this.$nextTick(() => _.each(grids, g => g.classList.add('grid-item')));
     }
   }
 }
@@ -219,10 +301,10 @@ $grid-padding: 5px;
 
 .filter-column {
   min-width: 200px;
-}
 
-.title > svg {
-  float: right;
+  .title > svg {
+    float: right;
+  }
 }
 
 .grid {
@@ -232,14 +314,13 @@ $grid-padding: 5px;
 
   .grid-item {
     flex: 0 0 auto;
-    width: 250px;
-    //height: 250px;
     margin: $grid-padding;
     display: flex;
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
     position: relative;
+    flex-flow: row nowrap;
 
     &::before {
       content: "";
@@ -249,11 +330,37 @@ $grid-padding: 5px;
       padding-bottom: 100%;
     }
 
-    @media (max-width: 2000px) { width: calc(100% / 5 - #{$grid-padding} * 2); }
-    @media (max-width: 1500px) { width: calc(100% / 4 - #{$grid-padding} * 2); }
-    @media (max-width: 1100px) { width: calc(100% / 3 - #{$grid-padding} * 2); }
-    @media (max-width:  800px) { width: calc(100% / 2 - #{$grid-padding} * 2); }
-    @media (max-width:  600px) { width: calc(100% / 1 - #{$grid-padding} * 2); }
+    .details, .cover img {
+      display: none;
+    }
+  }
+
+  &.size-mega {
+    .grid-item {
+      @media (max-width: 2000px) { width: calc(100% / 3 - #{$grid-padding} * 2); }
+      @media (max-width: 1500px) { width: calc(100% / 2 - #{$grid-padding} * 2); }
+      @media (max-width: 1100px) { width: calc(100% / 1 - #{$grid-padding} * 2); }
+    }
+  }
+
+  &.size-large {
+    .grid-item {
+      @media (max-width: 2000px) { width: calc(100% / 5 - #{$grid-padding} * 2); }
+      @media (max-width: 1500px) { width: calc(100% / 4 - #{$grid-padding} * 2); }
+      @media (max-width: 1100px) { width: calc(100% / 3 - #{$grid-padding} * 2); }
+      @media (max-width:  800px) { width: calc(100% / 2 - #{$grid-padding} * 2); }
+      @media (max-width:  600px) { width: calc(100% / 1 - #{$grid-padding} * 2); }
+    }
+  }
+
+  &.size-small {
+    .grid-item {
+      @media (max-width: 2000px) { width: calc(100% / 7 - #{$grid-padding} * 2); }
+      @media (max-width: 1500px) { width: calc(100% / 6 - #{$grid-padding} * 2); }
+      @media (max-width: 1100px) { width: calc(100% / 5 - #{$grid-padding} * 2); }
+      @media (max-width:  800px) { width: calc(100% / 4 - #{$grid-padding} * 2); }
+      @media (max-width:  600px) { width: calc(100% / 3 - #{$grid-padding} * 2); }
+    }
   }
 
   .status {
@@ -262,7 +369,7 @@ $grid-padding: 5px;
     left: 0;
     right: 0;
     bottom: 0;
-    padding: 20%;
+    padding: 40%;
 
     svg {
       width: 100%;
@@ -270,17 +377,17 @@ $grid-padding: 5px;
     }
 
     &.completed {
-      background-color: rgba(0, 228, 30, 0.5);
+      background-color: rgba(0, 228, 30, 0.25);
       color: #49ff39;
     }
 
     &.playing {
-      background-color: rgba(0, 2, 146, 0.5);
+      background-color: rgba(0, 2, 146, 0.25);
       color: #9db5ff;
     }
 
     &.tentative {
-      background-color: rgba(128, 128, 128, 0.5);
+      background-color: rgba(128, 128, 128, 0.25);
       color: #ffea2d;
     }
 
@@ -292,6 +399,11 @@ $grid-padding: 5px;
     &.dropped {
       background-color: rgba(121, 0, 0, 0.5);
       color: #ff4747;
+    }
+
+    &.up.next {
+      background-color: rgba(0, 112, 146, 0.25);
+      color: #9dfcff;
     }
   }
 
@@ -330,6 +442,46 @@ $grid-padding: 5px;
     background-color: rgba(128, 0, 0, 0.6);
     color: white;
     text-align: center;
+  }
+
+  &.size-list {
+    .grid-item {
+      width: 100%;
+      background-image: none !important;
+      padding: 1em;
+      border-radius: 0.5em;
+      align-items: flex-start;
+
+      background: rgba(0, 0, 0, 0.35);
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.5);
+      }
+      
+      &::before {
+        display: none;
+      }
+
+      .info {
+        display: none;
+      }
+
+      .cover {
+        position: relative;
+        margin-right: 2em;
+        flex: 0 0 auto;
+      }
+      
+      img {
+        display: block;
+        height: 100px;
+        margin: 0 auto;
+      }
+
+      .details {
+        display: block;
+      }
+    }
   }
 }
 </style>

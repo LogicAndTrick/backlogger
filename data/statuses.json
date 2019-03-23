@@ -1,8 +1,9 @@
 [
-    "Tentative",
-    "Backlog",
     "Playing",
-    "Completed",
+    "Up next",
+    "Backlog",
+    "Tentative",
     "Stalled",
+    "Completed",
     "Dropped"
 ]

@@ -146,6 +146,14 @@
               <button type="button" class="button is-success is-small" @click="editing = true">Edit</button>
             </div>
           </div>
+          <div v-else class="field is-grouped">
+            <div class="control" style="line-height: 2em;">
+              <strong>{{game.status || 'Backlog'}}</strong>
+            </div>
+            <div>
+              <button type="button" class="button is-success is-small" @click="addToMyList">Add to my list</button>
+            </div>
+          </div>
 
           <p class="summary">{{game.summary}}</p>
           <div class="tags margin-top-2" v-if="game.genres || game.themes">
@@ -293,6 +301,16 @@ export default {
       let fn = this.$refs.filename;
       let fu = this.$refs.fileurl;
       this.youAreAnIdiot = fn && fu && fn.files.length > 0 && fu.value.length > 0;
+    },
+    async addToMyList() {
+      this.loading = true;
+
+      let result = await methods.request(this.$store.state.baseUrl, 'add', {
+        user_id: this.$store.state.user.id,
+        game_id: this.game.id
+      });
+      this.$store.commit('add', result);
+      this.$router.push({ name: 'game', params: { user: this.$store.state.user.name, slug: result.slug } });
     }
   },
   watch: {

@@ -21,7 +21,14 @@ export default new Vuex.Store({
       state.user = user;
     },
     add(state, game) {
-      state.user.games.push(game);
+      let g = _.find(state.user.games, x => x.id == game.id);
+      if (g) {
+        for (const key in game) {
+          g[key] = game[key];
+        }
+      } else {
+        state.user.games.push(game);
+      }
     },
     update(state, game) {
       let g = _.find(state.user.games, x => x.id == game.id);

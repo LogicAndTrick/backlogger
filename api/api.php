@@ -87,6 +87,11 @@ class Api
     public function add() {
         $user_id = $this->get('user_id');
         $game_id = $this->get('game_id');
+
+        // Make sure the game doesn't already exist in the library
+        $game = $this->database->game_get($user_id, $game_id);
+        if ($game) return $game;
+
         $filter = "id = $game_id";
         $game = $this->request(
             'games',
